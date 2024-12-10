@@ -1,0 +1,75 @@
+---
+title: "HW4"
+output: html_document
+author: Matthew Moy
+date: "2024-12-09"
+---
+
+```{r}
+library(shiny)
+library(ggplot2)
+library(dplyr)
+```
+
+
+```{r}
+ui <- fluidPage(
+  titlePanel("Diabetes PCA Analysis"),
+  sidebarLayout(
+    sidebarPanel(
+      helpText("Select variables for PCA to explore their impact on diabetes."),
+
+      checkboxGroupInput("vars", "Select Variables for PCA:",
+                         choices = list(
+                           "Cholesterol (chol)" = "chol",
+                           "Stable Glucose (stab.glu)" = "stab.glu",
+                           "HDL (hdl)" = "hdl",
+                           "Height" = "height",
+                           "Weight" = "weight",
+                           "Waist" = "waist",
+                           "Hip" = "hip"
+                         ),
+                         selected = c("chol", "stab.glu", "hdl")),
+      
+      actionButton("go", "Run PCA"),
+      
+      helpText("Descriptions:",
+               tags$ul(
+                 tags$li("Cholesterol (chol): A waxy substance found in your blood, important for building healthy cells, but high levels can increase heart disease risk."),
+                 tags$li("Stable Glucose (stab.glu): The level of glucose in the blood after fasting; stable levels are crucial for managing diabetes."),
+                 tags$li("HDL (hdl): High-density lipoprotein, often referred to as 'good' cholesterol, helps remove other forms of cholesterol from your bloodstream."), 
+                 tags$li("Waist: Waist circumference is used to measure abdominal obesity and assess overall health risks."),
+                 tags$li("Hip: Hip measurements are used to determine body fat distribution and assess health risks related to obesity.")
+               ))
+    ),
+    mainPanel(
+      plotOutput("pcaPlot")
+    )
+  )
+)
+
+server <- function(input, output) {
+  observeEvent(input$go, {
+    req(input$vars)
+    pca_data <- data %>%
+      select(all_of(input$vars)) %>%
+      na.omit() %>%
+      scale()
+    pca_result <- prcomp(pca_data, scale. = TRUE)
+
+    output$pcaPlot <- renderPlot({
+      scores <- as.data.frame(pca_result$x)
+
+      ggplot(scores, aes(x = PC1, y = PC2)) +
+        geom_point() +
+        labs(title = "PCA of Diabetes Related Variables",
+             x = "Principal Component 1",
+             y = "Principal Component 2") +
+        theme_minimal()
+    })
+  })
+}
+
+shinyApp(ui = ui, server = server)
+```
+
